@@ -1,0 +1,192 @@
+﻿<Window x:Class="InputOverlay.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="InputOverlay"
+        Width="350" Height="280"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        MouseRightButtonDown="Window_MouseRightButtonDown"
+        MouseRightButtonUp="Window_MouseRightButtonUp"
+        MouseMove="Window_MouseMove">
+    <Grid Background="Transparent" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="39*"/>
+            <RowDefinition Height="86*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+
+        <Border x:Name="OverlayBorder"
+                Background="#80000000"
+                CornerRadius="10"
+                Padding="10"
+                Grid.ColumnSpan="2"
+                Height="280" Width="350"
+                HorizontalAlignment="Left" VerticalAlignment="Top"
+                Grid.RowSpan="2">
+            <StackPanel>
+
+                <!-- MouseText: 右下影(=Pos) + 縁用7方向 + 本体 -->
+                <Grid Margin="0,0,0,10">
+                    <!-- 右下 -->
+                    <TextBlock x:Name="MouseTextShadowPos" Text="{Binding Text, ElementName=MouseText}" Foreground="Black" FontSize="48" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="0" Y="0"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <!-- 縁用7方向 -->
+                    <TextBlock x:Name="MouseTextShadowU"  Text="{Binding Text, ElementName=MouseText}" Foreground="Black" FontSize="48" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="0"  Y="-1"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="MouseTextShadowD"  Text="{Binding Text, ElementName=MouseText}" Foreground="Black" FontSize="48" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="0"  Y="1"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="MouseTextShadowL"  Text="{Binding Text, ElementName=MouseText}" Foreground="Black" FontSize="48" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="-1" Y="0"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="MouseTextShadowR"  Text="{Binding Text, ElementName=MouseText}" Foreground="Black" FontSize="48" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="1"  Y="0"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="MouseTextShadowUR" Text="{Binding Text, ElementName=MouseText}" Foreground="Black" FontSize="48" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="1"  Y="-1"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="MouseTextShadowUL" Text="{Binding Text, ElementName=MouseText}" Foreground="Black" FontSize="48" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="-1" Y="-1"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="MouseTextShadowLD" Text="{Binding Text, ElementName=MouseText}" Foreground="Black" FontSize="48" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="-1" Y="1"/>
+                        </TextBlock.RenderTransform></TextBlock>
+
+                    <TextBlock x:Name="MouseText" Foreground="White" FontSize="48" Text="🖱:□□□" TextAlignment="Center"/>
+                </Grid>
+
+                <!-- KeyText -->
+                <Grid Margin="0,0,0,10">
+                    <TextBlock x:Name="KeyTextShadowPos" Text="{Binding Text, ElementName=KeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="0" Y="0"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="KeyTextShadowU"  Text="{Binding Text, ElementName=KeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="0"  Y="-1"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="KeyTextShadowD"  Text="{Binding Text, ElementName=KeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="0"  Y="1"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="KeyTextShadowL"  Text="{Binding Text, ElementName=KeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="-1" Y="0"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="KeyTextShadowR"  Text="{Binding Text, ElementName=KeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="1"  Y="0"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="KeyTextShadowUR" Text="{Binding Text, ElementName=KeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="1"  Y="-1"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="KeyTextShadowUL" Text="{Binding Text, ElementName=KeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="-1" Y="-1"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="KeyTextShadowLD" Text="{Binding Text, ElementName=KeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="-1" Y="1"/>
+                        </TextBlock.RenderTransform></TextBlock>
+
+                    <TextBlock x:Name="KeyText" Foreground="White" FontSize="36" Text="" TextAlignment="Center"/>
+                </Grid>
+
+                <!-- PrevKeyText（0.4） -->
+                <Grid Margin="0,0,0,10" Opacity="0.4">
+                    <TextBlock x:Name="PrevKeyTextShadowPos" Text="{Binding Text, ElementName=PrevKeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="0" Y="0"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="PrevKeyTextShadowU"  Text="{Binding Text, ElementName=PrevKeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="0"  Y="-1"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="PrevKeyTextShadowD"  Text="{Binding Text, ElementName=PrevKeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="0"  Y="1"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="PrevKeyTextShadowL"  Text="{Binding Text, ElementName=PrevKeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="-1" Y="0"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="PrevKeyTextShadowR"  Text="{Binding Text, ElementName=PrevKeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="1"  Y="0"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="PrevKeyTextShadowUR" Text="{Binding Text, ElementName=PrevKeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="1"  Y="-1"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="PrevKeyTextShadowUL" Text="{Binding Text, ElementName=PrevKeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="-1" Y="-1"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="PrevKeyTextShadowLD" Text="{Binding Text, ElementName=PrevKeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="-1" Y="1"/>
+                        </TextBlock.RenderTransform></TextBlock>
+
+                    <TextBlock x:Name="PrevKeyText" Foreground="White" FontSize="36" Text="" TextAlignment="Center"/>
+                </Grid>
+
+                <!-- PrevPrevKeyText（0.1） -->
+                <Grid Margin="0,0,0,10" Opacity="0.1">
+                    <TextBlock x:Name="PrevPrevKeyTextShadowPos" Text="{Binding Text, ElementName=PrevPrevKeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="0" Y="0"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="PrevPrevKeyTextShadowU"  Text="{Binding Text, ElementName=PrevPrevKeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="0"  Y="-1"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="PrevPrevKeyTextShadowD"  Text="{Binding Text, ElementName=PrevPrevKeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="0"  Y="1"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="PrevPrevKeyTextShadowL"  Text="{Binding Text, ElementName=PrevPrevKeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="-1" Y="0"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="PrevPrevKeyTextShadowR"  Text="{Binding Text, ElementName=PrevPrevKeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="1"  Y="0"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="PrevPrevKeyTextShadowUR" Text="{Binding Text, ElementName=PrevPrevKeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="1"  Y="-1"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="PrevPrevKeyTextShadowUL" Text="{Binding Text, ElementName=PrevPrevKeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="-1" Y="-1"/>
+                        </TextBlock.RenderTransform></TextBlock>
+                    <TextBlock x:Name="PrevPrevKeyTextShadowLD" Text="{Binding Text, ElementName=PrevPrevKeyText}" Foreground="Black" FontSize="36" TextAlignment="Center" Visibility="Collapsed">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform X="-1" Y="1"/>
+                        </TextBlock.RenderTransform></TextBlock>
+
+                    <TextBlock x:Name="PrevPrevKeyText" Foreground="White" FontSize="36" Text="" TextAlignment="Center"/>
+                </Grid>
+
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
