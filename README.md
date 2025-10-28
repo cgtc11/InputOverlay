@@ -1,8 +1,3 @@
-Download</br>
-[InputOverlay.txt](https://github.com/user-attachments/files/23188400/InputOverlay.txt)
-
-
-
 </br>
 <img width="702" height="763" alt="input" src="https://github.com/user-attachments/assets/2e677901-9462-4fe2-a1ec-baa408d8a430" /></br>
 </br>
