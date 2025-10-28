@@ -1,7 +1,6 @@
 Download</br>
+[InputOverlay.txt](https://github.com/user-attachments/files/23188400/InputOverlay.txt)
 
-
-[InputOverlay.zip](https://github.com/user-attachments/files/23188309/InputOverlay.zip)
 
 
 </br>
