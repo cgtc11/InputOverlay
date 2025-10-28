@@ -50,7 +50,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>InputOverlay_icon_64x64.ico</ApplicationIcon>
+    <ApplicationIcon>InputOverlayicon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -96,6 +96,9 @@
     <Page Include="PaintWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="PointerWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="PropertiesWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -103,6 +106,9 @@
   <ItemGroup>
     <Compile Include="PaintWindow.xaml.cs">
       <DependentUpon>PaintWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="PointerWindow.xaml.cs">
+      <DependentUpon>PointerWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="PropertiesWindow.xaml.cs">
       <DependentUpon>PropertiesWindow.xaml</DependentUpon>
@@ -123,6 +129,7 @@
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -145,25 +152,10 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <None Include="InputOverlay_icon_8x8.ico" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="Resources\Icon.ico" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="InputOverlay_icon_16x16.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="InputOverlay_icon_32x32.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="InputOverlay_icon_64x64.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="InputOverlay_icon_128x128.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="InputOverlay_icon_256x256.ico" />
+    <Resource Include="InputOverlayicon.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

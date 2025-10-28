@@ -10,15 +10,13 @@ namespace InputOverlay
     public partial class PropertiesWindow : Window
     {
         private MainWindow main;
+        private bool _suspend; // 双方向反映のループ防止
 
         private const int GWL_EXSTYLE = -20;
         private const int WS_EX_TOOLWINDOW = 0x00000080;
 
-        [DllImport("user32.dll")]
-        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
-
-        [DllImport("user32.dll")]
-        private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+        [DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+        [DllImport("user32.dll")] private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
 
         private bool _isRightDragging = false;
         private Point _dragStartScreen;
@@ -96,6 +94,27 @@ namespace InputOverlay
                 windowScale.ValueChanged += (s2, e2) => main.SetUiScale(windowScale.Value);
             }
 
+            // ★ F8 ポインタ 初期値
+            if (FindName("ShortcutPointerBox") is ComboBox sp) FillKeyCombo(sp, main.ShortcutPointer);
+            if (FindName("ChkShiftPointer") is CheckBox csp) csp.IsChecked = main.UseShiftPointer;
+            if (FindName("ChkPointerEnabled") is CheckBox cpe)
+            {
+                cpe.IsChecked = main.PointerEnabled;
+                cpe.Checked += Apply_Changed;
+                cpe.Unchecked += Apply_Changed;
+            }
+            if (FindName("PointerSizeSlider") is Slider psz)
+            {
+                psz.Value = main.PointerSize; // 既定50
+                psz.ValueChanged += Apply_Changed;
+            }
+            if (FindName("PointerOpacitySlider") is Slider posz)
+            {
+                posz.Value = main.PointerOpacity; // 既定0.4
+                posz.ValueChanged += Apply_Changed;
+            }
+
+            // イベント
             ChkMovable.Checked += Apply_Changed;
             ChkMovable.Unchecked += Apply_Changed;
             OpacitySlider.ValueChanged += Apply_Changed;
@@ -190,7 +209,7 @@ namespace InputOverlay
 
         private void Apply_Changed(object sender, EventArgs e)
         {
-            if (main == null) return;
+            if (_suspend || main == null) return;
 
             main.AllowMove = ChkMovable.IsChecked == true;
 
@@ -236,12 +255,39 @@ namespace InputOverlay
 
             if (FindName("WindowScaleSlider") is Slider windowScale) main.SetUiScale(windowScale.Value);
 
+            // ★ ポインタ反映
+            if (FindName("ShortcutPointerBox") is ComboBox sp && sp.SelectedItem is ComboBoxItem spi)
+                main.ShortcutPointer = (System.Windows.Forms.Keys)spi.Tag;
+            if (FindName("ChkShiftPointer") is CheckBox csp2) main.UseShiftPointer = csp2.IsChecked == true;
+            if (FindName("ChkPointerEnabled") is CheckBox cpe2) main.PointerEnabled = cpe2.IsChecked == true;
+            if (FindName("PointerSizeSlider") is Slider psz2) main.PointerSize = Math.Max(1, psz2.Value);
+            if (FindName("PointerOpacitySlider") is Slider posz2) main.PointerOpacity = Math.Max(0, Math.Min(1, posz2.Value));
+
+            main.UpdatePointerAppearance();
+            main.ApplyPointerEnabled(); // 表示/非表示を反映
+
             main.UpdateShadowVisuals();
         }
 
-        private void Exit_Click(object sender, RoutedEventArgs e)
+        // === Main → プロパティへの状態反映（F8トグル時に同期） ===
+        public void OnPointerStateChangedFromMain(bool enabled, System.Windows.Forms.Keys key, bool useShift, double size, double opacity)
         {
-            Application.Current.Shutdown();
+            _suspend = true;
+            try
+            {
+                if (FindName("ChkPointerEnabled") is CheckBox cpe) cpe.IsChecked = enabled;
+                if (FindName("ShortcutPointerBox") is ComboBox sp)
+                {
+                    foreach (ComboBoxItem it in sp.Items)
+                        if (it.Tag is System.Windows.Forms.Keys k && k == key) { sp.SelectedItem = it; break; }
+                }
+                if (FindName("ChkShiftPointer") is CheckBox csp) csp.IsChecked = useShift;
+                if (FindName("PointerSizeSlider") is Slider psz) psz.Value = size;
+                if (FindName("PointerOpacitySlider") is Slider posz) posz.Value = opacity;
+            }
+            finally { _suspend = false; }
         }
+
+        private void Exit_Click(object sender, RoutedEventArgs e) => Application.Current.Shutdown();
     }
 }

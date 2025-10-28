@@ -1,0 +1,18 @@
+<Window x:Class="InputOverlay.PointerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="PointerWindow"
+        Width="200" Height="200"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False">
+    <Canvas x:Name="Root" Background="Transparent" IsHitTestVisible="False">
+        <Ellipse x:Name="PointerEllipse"
+                 Width="50" Height="50"
+                 Fill="Yellow"
+                 Opacity="0.4"
+                 IsHitTestVisible="False"/>
+    </Canvas>
+</Window>

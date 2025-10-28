@@ -7,7 +7,7 @@ using System.Windows.Interop;
 using System.Windows.Forms;   // NotifyIcon / Keys / Screen
 using System.Drawing;        // Icon, Point
 using System.Collections.Generic;
-using System.Windows.Media;  // ScaleTransform, SolidColorBrush, TranslateTransform
+using System.Windows.Media;  // ScaleTransform, SolidColorBrush, TranslateTransform, Brushes
 using MediaColor = System.Windows.Media.Color;
 using MediaColors = System.Windows.Media.Colors;
 
@@ -62,28 +62,34 @@ namespace InputOverlay
         public Keys ShortcutPaint { get; set; } = Keys.F3; public bool UseShiftPaint { get; set; } = false;
         public Keys ShortcutMagnifier { get; set; } = Keys.F4; public bool UseShiftMagnifier { get; set; } = false;
 
+        // === 影 ===
+        public double UiScale { get; private set; } = 1.0;
+        private double _baseWidth = 0, _baseHeight = 0; private bool _baseSizeCaptured = false;
+        public double TextOpacity { get; set; } = 1.0;
+        public bool ShadowEnabled { get; set; } = false;
+        public bool OutlineEnabled { get; set; } = false;
+        public double ShadowOffset { get; set; } = 1.0;
+
+        // === F8 マウスポインタ ===
+        public Keys ShortcutPointer { get; set; } = Keys.F8; public bool UseShiftPointer { get; set; } = false;
+        public bool PointerEnabled { get; set; } = false;
+        public double PointerSize { get; set; } = 50.0;   // 直径
+        public double PointerOpacity { get; set; } = 0.4; // 透過
+        private PointerWindow pointerWindow;              // ★専用ウィンドウ
+
+        // キー表示タイマー
         private System.Windows.Threading.DispatcherTimer keyTimer1, keyTimer2, keyTimer3;
 
+        // 右ドラッグ移動
         private bool _rIsDown = false, _rDownInside = false, _isRightDragging = false;
         private System.Drawing.Point _rStartPt;
         private System.Windows.Point _windowStartPt;
         private const int DRAG_THRESHOLD = 6;
 
         private IntPtr _hwnd = IntPtr.Zero;
-
         public double KeyTextClearSeconds { get; set; } = 5;
         public double PrevKeyTextClearSeconds { get; set; } = 4.8;
         public double PrevPrevKeyTextClearSeconds { get; set; } = 4.7;
-
-        public double UiScale { get; private set; } = 1.0;
-        private double _baseWidth = 0, _baseHeight = 0; private bool _baseSizeCaptured = false;
-
-        public double TextOpacity { get; set; } = 1.0;
-
-        // 影設定
-        public bool ShadowEnabled { get; set; } = false;   // 「文字に影を出す」
-        public bool OutlineEnabled { get; set; } = false;  // 「縁にする」
-        public double ShadowOffset { get; set; } = 1.0;
 
         public MainWindow()
         {
@@ -102,7 +108,7 @@ namespace InputOverlay
 
             ApplyTextBrush(MediaColors.White, TextOpacity);
 
-            notifyIcon = new NotifyIcon { Icon = Properties.Resources.InputOverlay_icon_256x256, Text = "InputOverlay", Visible = true };
+            notifyIcon = new NotifyIcon { Icon = Properties.Resources.InputOverlayicon, Text = "InputOverlay", Visible = true };
             var menu = new ContextMenuStrip();
             menu.Items.Add("プロパティ", null, (s, e) => ShowProperties());
             menu.Items.Add("終了", null, (s, e) => this.Close());
@@ -116,7 +122,14 @@ namespace InputOverlay
             keyTimer2.Tick += (s, e) => { PrevKeyText.Text = ""; keyTimer2.Stop(); };
             keyTimer3.Tick += (s, e) => { PrevPrevKeyText.Text = ""; keyTimer3.Stop(); };
 
-            this.Loaded += (s, e) => { CaptureBaseSizeIfNeeded(); SetUiScale(UiScale); UpdateShadowVisuals(); };
+            this.Loaded += (s, e) =>
+            {
+                CaptureBaseSizeIfNeeded();
+                SetUiScale(UiScale);
+                UpdateShadowVisuals();
+                EnsurePointerWindow(); // 準備のみ。表示はしない
+                UpdatePointerAppearance();
+            };
         }
 
         protected override void OnSourceInitialized(EventArgs e)
@@ -149,7 +162,7 @@ namespace InputOverlay
             SetWindowPos(_hwnd, IntPtr.Zero, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
         }
 
-        // ==== キーボード・マウスフック（省略なし、前回回答と同じ） ====
+        // ==== キーボードフック（F1/F2/F3/F4/F8）====
         private static IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
             if (nCode >= 0 && (wParam == (IntPtr)WM_KEYDOWN || wParam == (IntPtr)WM_SYSKEYDOWN))
@@ -228,6 +241,17 @@ namespace InputOverlay
                         else { main.magnifier.Close(); main.magnifier = null; }
                     });
                 }
+                // ★ F8: マウスポインタ表示/非表示
+                else if (key == instance.ShortcutPointer &&
+                         (!instance.UseShiftPointer || (System.Windows.Forms.Control.ModifierKeys & Keys.Shift) == Keys.Shift))
+                {
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        instance.PointerEnabled = !instance.PointerEnabled;
+                        instance.ApplyPointerEnabled();
+                        instance.NotifyPointerStateToProperty();
+                    });
+                }
                 else
                 {
                     System.Windows.Application.Current.Dispatcher.Invoke(() =>
@@ -265,11 +289,13 @@ namespace InputOverlay
             return CallNextHookEx(kbHook, nCode, wParam, lParam);
         }
 
+        // ==== マウスフック ====
         private static IntPtr MouseHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
             if (nCode >= 0)
             {
                 string state = instance.MouseText.Text;
+
                 if (wParam == (IntPtr)WM_LBUTTONDOWN) state = "🖱:■□□";
                 else if (wParam == (IntPtr)WM_LBUTTONUP) state = "🖱:□□□";
                 else if (wParam == (IntPtr)WM_RBUTTONDOWN) state = "🖱:□□■";
@@ -293,6 +319,18 @@ namespace InputOverlay
                 System.Windows.Application.Current.Dispatcher.Invoke(() => { instance.MouseText.Text = state; });
 
                 var ms = Marshal.PtrToStructure<MSLLHOOKSTRUCT>(lParam);
+
+                // ★ ポインタの追従
+                if (wParam == (IntPtr)WM_MOUSEMOVE)
+                {
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        if (instance.pointerWindow != null && instance.pointerWindow.IsVisible)
+                            instance.pointerWindow.MoveCenterToScreenPoint(ms.pt.x, ms.pt.y);
+                    });
+                }
+
+                // 右ドラッグ移動の既存ロジック
                 if (wParam == (IntPtr)WM_RBUTTONDOWN)
                 {
                     bool inside = false;
@@ -345,6 +383,7 @@ namespace InputOverlay
             if (msHook != IntPtr.Zero) UnhookWindowsHookEx(msHook);
             if (notifyIcon != null) { notifyIcon.Visible = false; notifyIcon.Dispose(); }
             if (paintWindows != null) { foreach (var pw in paintWindows) pw.Close(); paintWindows.Clear(); }
+            if (pointerWindow != null) { pointerWindow.Close(); pointerWindow = null; }
         }
 
         private void Window_MouseRightButtonDown(object s, System.Windows.Input.MouseButtonEventArgs e) { }
@@ -364,7 +403,7 @@ namespace InputOverlay
         {
             if (scale < 0.1) scale = 0.1; if (scale > 3.0) scale = 3.0; UiScale = scale;
             CaptureBaseSizeIfNeeded();
-            if (this.Content is FrameworkElement root) root.LayoutTransform = new ScaleTransform(UiScale, UiScale);
+            if (this.Content is FrameworkElement root) root.LayoutTransform = new System.Windows.Media.ScaleTransform(UiScale, UiScale);
             if (_baseSizeCaptured && this.SizeToContent == SizeToContent.Manual)
             {
                 this.Width = Math.Max(100.0, _baseWidth * UiScale);
@@ -372,7 +411,7 @@ namespace InputOverlay
             }
         }
 
-        // ===== 文字色＋文字透過の適用 =====
+        // ===== テキスト前景・影 =====
         public void ApplyTextBrush(MediaColor baseColor, double opacity01)
         {
             TextOpacity = Math.Max(0, Math.Min(1, opacity01));
@@ -384,30 +423,24 @@ namespace InputOverlay
             if (PrevKeyText != null) PrevKeyText.Foreground = mainBrush;
             if (PrevPrevKeyText != null) PrevPrevKeyText.Foreground = mainBrush;
 
-            // ★ 影色の決定：白・黄 → 黒影／それ以外 → 白影
             bool isWhite = baseColor.R == MediaColors.White.R && baseColor.G == MediaColors.White.G && baseColor.B == MediaColors.White.B;
             bool isYellow = baseColor.R == MediaColors.Yellow.R && baseColor.G == MediaColors.Yellow.G && baseColor.B == MediaColors.Yellow.B;
             var shadowColor = (isWhite || isYellow) ? MediaColors.Black : MediaColors.White;
             shadowColor.A = (byte)(TextOpacity * 255);
             var shadowBrush = new SolidColorBrush(shadowColor);
 
-            // 右下影
             if (MouseTextShadowPos != null) MouseTextShadowPos.Foreground = shadowBrush;
             if (KeyTextShadowPos != null) KeyTextShadowPos.Foreground = shadowBrush;
             if (PrevKeyTextShadowPos != null) PrevKeyTextShadowPos.Foreground = shadowBrush;
             if (PrevPrevKeyTextShadowPos != null) PrevPrevKeyTextShadowPos.Foreground = shadowBrush;
 
-            // 縁用7方向
-            foreach (var tb in new System.Windows.Controls.TextBlock[]
-            {
+            foreach (var tb in new System.Windows.Controls.TextBlock[] {
                 MouseTextShadowU, MouseTextShadowD, MouseTextShadowL, MouseTextShadowR, MouseTextShadowUR, MouseTextShadowUL, MouseTextShadowLD,
                 KeyTextShadowU,   KeyTextShadowD,   KeyTextShadowL,   KeyTextShadowR,   KeyTextShadowUR,   KeyTextShadowUL,   KeyTextShadowLD,
                 PrevKeyTextShadowU, PrevKeyTextShadowD, PrevKeyTextShadowL, PrevKeyTextShadowR, PrevKeyTextShadowUR, PrevKeyTextShadowUL, PrevKeyTextShadowLD,
                 PrevPrevKeyTextShadowU, PrevPrevKeyTextShadowD, PrevPrevKeyTextShadowL, PrevPrevKeyTextShadowR, PrevPrevKeyTextShadowUR, PrevPrevKeyTextShadowUL, PrevPrevKeyTextShadowLD
             })
-            {
-                if (tb != null) tb.Foreground = shadowBrush;
-            }
+            { if (tb != null) tb.Foreground = shadowBrush; }
 
             UpdateShadowVisuals();
         }
@@ -416,41 +449,34 @@ namespace InputOverlay
         {
             var off = Math.Max(0, ShadowOffset);
 
-            // 可視切替
-            var visPos = ShadowEnabled ? Visibility.Visible : Visibility.Collapsed;                 // 右下影
-            var vis7 = (ShadowEnabled && OutlineEnabled) ? Visibility.Visible : Visibility.Collapsed; // 追加7方向
+            var visPos = ShadowEnabled ? Visibility.Visible : Visibility.Collapsed;
+            var vis7 = (ShadowEnabled && OutlineEnabled) ? Visibility.Visible : Visibility.Collapsed;
 
             if (MouseTextShadowPos != null) MouseTextShadowPos.Visibility = visPos;
             if (KeyTextShadowPos != null) KeyTextShadowPos.Visibility = visPos;
             if (PrevKeyTextShadowPos != null) PrevKeyTextShadowPos.Visibility = visPos;
             if (PrevPrevKeyTextShadowPos != null) PrevPrevKeyTextShadowPos.Visibility = visPos;
 
-            foreach (var tb in new System.Windows.Controls.TextBlock[]
-            {
+            foreach (var tb in new System.Windows.Controls.TextBlock[] {
                 MouseTextShadowU, MouseTextShadowD, MouseTextShadowL, MouseTextShadowR, MouseTextShadowUR, MouseTextShadowUL, MouseTextShadowLD,
                 KeyTextShadowU,   KeyTextShadowD,   KeyTextShadowL,   KeyTextShadowR,   KeyTextShadowUR,   KeyTextShadowUL,   KeyTextShadowLD,
                 PrevKeyTextShadowU, PrevKeyTextShadowD, PrevKeyTextShadowL, PrevKeyTextShadowR, PrevKeyTextShadowUR, PrevKeyTextShadowUL, PrevKeyTextShadowLD,
                 PrevPrevKeyTextShadowU, PrevPrevKeyTextShadowD, PrevPrevKeyTextShadowL, PrevPrevKeyTextShadowR, PrevPrevKeyTextShadowUR, PrevPrevKeyTextShadowUL, PrevPrevKeyTextShadowLD
             })
-            {
-                if (tb != null) tb.Visibility = vis7;
-            }
+            { if (tb != null) tb.Visibility = vis7; }
 
-            // 変位
             void TT(System.Windows.Controls.TextBlock tb, double x, double y)
             {
                 if (tb == null) return;
-                if (tb.RenderTransform is TranslateTransform t) { t.X = x; t.Y = y; }
-                else tb.RenderTransform = new TranslateTransform(x, y);
+                if (tb.RenderTransform is System.Windows.Media.TranslateTransform t) { t.X = x; t.Y = y; }
+                else tb.RenderTransform = new System.Windows.Media.TranslateTransform(x, y);
             }
 
-            // 右下
             TT(MouseTextShadowPos, off, off);
             TT(KeyTextShadowPos, off, off);
             TT(PrevKeyTextShadowPos, off, off);
             TT(PrevPrevKeyTextShadowPos, off, off);
 
-            // 7方向
             TT(MouseTextShadowU, 0, -off); TT(MouseTextShadowD, 0, off);
             TT(MouseTextShadowL, -off, 0); TT(MouseTextShadowR, off, 0);
             TT(MouseTextShadowUR, off, -off);
@@ -474,6 +500,47 @@ namespace InputOverlay
             TT(PrevPrevKeyTextShadowUR, off, -off);
             TT(PrevPrevKeyTextShadowUL, -off, -off);
             TT(PrevPrevKeyTextShadowLD, -off, off);
+        }
+
+        // ==== PointerWindow 制御 ====
+        private void EnsurePointerWindow()
+        {
+            if (pointerWindow != null) return;
+            pointerWindow = new PointerWindow();
+            pointerWindow.Owner = null; // 独立ウィンドウ（前面維持）
+            pointerWindow.Visibility = Visibility.Hidden;
+        }
+
+        public void ApplyPointerEnabled()
+        {
+            EnsurePointerWindow();
+            if (!PointerEnabled)
+            {
+                pointerWindow.Visibility = Visibility.Hidden;
+                return;
+            }
+            pointerWindow.SetAppearance(PointerSize, PointerOpacity, System.Windows.Media.Brushes.Yellow);
+            pointerWindow.Visibility = Visibility.Visible;
+
+            // 初期位置
+            GetCursorPos(out System.Drawing.Point p);
+            pointerWindow.MoveCenterToScreenPoint(p.X, p.Y);
+        }
+
+        public void UpdatePointerAppearance()
+        {
+            EnsurePointerWindow();
+            if (pointerWindow == null) return;
+            if (pointerWindow.IsVisible)
+            {
+                pointerWindow.SetAppearance(PointerSize, PointerOpacity, System.Windows.Media.Brushes.Yellow);
+            }
+        }
+
+        private void NotifyPointerStateToProperty()
+        {
+            if (propertiesWindow == null) return;
+            propertiesWindow.OnPointerStateChangedFromMain(PointerEnabled, ShortcutPointer, UseShiftPointer, PointerSize, PointerOpacity);
         }
     }
 }

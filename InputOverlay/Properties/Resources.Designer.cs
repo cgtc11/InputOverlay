@@ -63,59 +63,9 @@ namespace InputOverlay.Properties {
         /// <summary>
         ///   (アイコン) に類似した型 System.Drawing.Icon のローカライズされたリソースを検索します。
         /// </summary>
-        internal static System.Drawing.Icon InputOverlay_icon_128x128 {
+        internal static System.Drawing.Icon InputOverlayicon {
             get {
-                object obj = ResourceManager.GetObject("InputOverlay_icon_128x128", resourceCulture);
-                return ((System.Drawing.Icon)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   (アイコン) に類似した型 System.Drawing.Icon のローカライズされたリソースを検索します。
-        /// </summary>
-        internal static System.Drawing.Icon InputOverlay_icon_16x16 {
-            get {
-                object obj = ResourceManager.GetObject("InputOverlay_icon_16x16", resourceCulture);
-                return ((System.Drawing.Icon)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   (アイコン) に類似した型 System.Drawing.Icon のローカライズされたリソースを検索します。
-        /// </summary>
-        internal static System.Drawing.Icon InputOverlay_icon_256x256 {
-            get {
-                object obj = ResourceManager.GetObject("InputOverlay_icon_256x256", resourceCulture);
-                return ((System.Drawing.Icon)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   (アイコン) に類似した型 System.Drawing.Icon のローカライズされたリソースを検索します。
-        /// </summary>
-        internal static System.Drawing.Icon InputOverlay_icon_32x32 {
-            get {
-                object obj = ResourceManager.GetObject("InputOverlay_icon_32x32", resourceCulture);
-                return ((System.Drawing.Icon)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   (アイコン) に類似した型 System.Drawing.Icon のローカライズされたリソースを検索します。
-        /// </summary>
-        internal static System.Drawing.Icon InputOverlay_icon_64x64 {
-            get {
-                object obj = ResourceManager.GetObject("InputOverlay_icon_64x64", resourceCulture);
-                return ((System.Drawing.Icon)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   (アイコン) に類似した型 System.Drawing.Icon のローカライズされたリソースを検索します。
-        /// </summary>
-        internal static System.Drawing.Icon InputOverlay_icon_8x8 {
-            get {
-                object obj = ResourceManager.GetObject("InputOverlay_icon_8x8", resourceCulture);
+                object obj = ResourceManager.GetObject("InputOverlayicon", resourceCulture);
                 return ((System.Drawing.Icon)(obj));
             }
         }
