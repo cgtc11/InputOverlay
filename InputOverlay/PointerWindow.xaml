@@ -8,11 +8,11 @@
         Background="Transparent"
         Topmost="True"
         ShowInTaskbar="False">
-    <Canvas x:Name="Root" Background="Transparent" IsHitTestVisible="False">
-        <Ellipse x:Name="PointerEllipse"
-                 Width="50" Height="50"
-                 Fill="Yellow"
-                 Opacity="0.4"
-                 IsHitTestVisible="False"/>
-    </Canvas>
+  <Canvas x:Name="Root" Background="Transparent" IsHitTestVisible="False">
+    <Ellipse x:Name="PointerEllipse"
+             Width="50" Height="50"
+             Fill="Yellow"
+             Opacity="0.4"
+             IsHitTestVisible="False"/>
+  </Canvas>
 </Window>

@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="InputOverlay v1.0.0"
-        Width="340" Height="889"
+        Width="340" Height="997"
         WindowStyle="None"
         ResizeMode="NoResize"
         Topmost="True"
@@ -80,9 +80,9 @@
                 <CheckBox x:Name="ChkOutlineEnabled" Content="縁にする" Margin="0,6,0,0"/>
             </StackPanel>
 
-            <!-- ★★★ ここから追記: F8 マウスポインタ ★★★ -->
+            <!-- F2 マウスポインタ -->
             <Separator Margin="0,12,0,6"/>
-            <TextBlock Text="------ F8 マウスポインタ On/Off ------" />
+            <TextBlock Text="------ F2 マウスポインタ On/Off ------" />
             <Grid Margin="0,6,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -114,8 +114,8 @@
                 <TextBlock Text="ポインタ透明度:" VerticalAlignment="Center"/>
                 <Slider x:Name="PointerOpacitySlider" Minimum="0" Maximum="1" Value="0.4" TickFrequency="0.05" IsSnapToTickEnabled="True" Width="160" Margin="6,0,0,0"/>
             </StackPanel>
-            <!-- ★★★ 追記ここまで ★★★ -->
 
+            <!-- F3 ペイント -->
             <Separator Margin="0,12,0,6"/>
             <TextBlock Text="------ F3 ペイント機能 On/Off ------" />
             <Grid Margin="0,6,0,0">
@@ -147,8 +147,29 @@
                 <TextBox x:Name="PenThicknessBox" Width="60" Margin="6,0,0,0" Text="3"/>
             </StackPanel>
 
+            <!-- Shift+F4 全画面ズーム（ZoomIt風） -->
             <Separator Margin="0,12,0,6"/>
-            <TextBlock Text="------ F4 ルーペ機能 On/Off ------" />
+            <TextBlock Text="------ F4 全画面ズーム ------" />
+            <Grid Margin="0,6,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" Grid.Column="0">
+                    <TextBlock Text="ショートカット設定:" VerticalAlignment="Center"/>
+                    <ComboBox x:Name="ShortcutFullZoomBox" Width="100" Margin="6,0,0,0"/>
+                </StackPanel>
+                <CheckBox x:Name="ChkShiftFullZoom" Grid.Column="1" Content="Shift併用" Margin="12,0,0,0" VerticalAlignment="Center"/>
+            </Grid>
+
+            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                <TextBlock Text="拡大率(倍):" VerticalAlignment="Center"/>
+                <TextBox x:Name="FullZoomScaleBox" Width="60" Margin="6,0,0,0" Text="2.0"/>
+            </StackPanel>
+
+            <!-- F4 ルーペ -->
+            <Separator Margin="0,12,0,6"/>
+            <TextBlock Text="------ Shift+F4 ルーペ機能 On/Off ------" />
             <Grid Margin="0,6,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />

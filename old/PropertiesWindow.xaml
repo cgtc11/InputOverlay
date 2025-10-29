@@ -1,0 +1,100 @@
+<Window x:Class="InputOverlay.PropertiesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="プロパティ" Height="620" Width="350"
+        Background="White"
+        AllowsTransparency="False"
+        WindowStyle="None"
+        Topmost="True"
+        MouseRightButtonDown="PropertiesWindow_MouseRightButtonDown"
+        MouseRightButtonUp="PropertiesWindow_MouseRightButtonUp"
+        MouseMove="PropertiesWindow_MouseMove">
+
+    <StackPanel Margin="10">
+        <TextBlock Text="InputOverlay v1.0.0" Margin="0,0,0,5" FontWeight="Bold"/>
+        <TextBlock Text="・マウス右ドラッグ：Window移動" Margin="0,0,0,5" FontWeight="Bold"/>
+        <TextBlock Text="・ショートカットがアプリと被る場合は変更してください" Margin="0,0,0,5" FontWeight="Bold"/>
+        <TextBlock Text="----- Shift+F1 オプション表示 On/Off -------" Margin="0,0,0,5" FontWeight="Bold"/>
+
+        <!-- ショートカット設定 -->
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock Text="ショートカット設定:" VerticalAlignment="Center"/>
+            <ComboBox x:Name="ShortcutOptionsBox" Width="100" Margin="5,0,0,0"/>
+            <CheckBox x:Name="ChkShiftOptions" Content="Shift併用" Margin="10,0,0,0"/>
+        </StackPanel>
+
+        <TextBlock Text="----- Shift+F2 キー表示機能 On/Off -------" Margin="0,5,0,5" FontWeight="Bold"/>
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock Text="ショートカット設定:" VerticalAlignment="Center"/>
+            <ComboBox x:Name="ShortcutVisibilityBox" Width="100" Margin="5,0,0,0"/>
+            <CheckBox x:Name="ChkShiftVisibility" Content="Shift併用" Margin="10,0,0,0"/>
+        </StackPanel>
+
+        <CheckBox x:Name="ChkMovable" Content="ウィンドウの移動を許可" IsChecked="True" Margin="0,0,0,10"/>
+
+        <!-- ★ ウィンドウ拡大（最小値を 0.1 に変更） -->
+        <TextBlock Text="ウィンドウ拡大:"/>
+        <Slider x:Name="WindowScaleSlider" Minimum="0.1" Maximum="3.0" Value="1.0" Width="200" Margin="0,0,0,10"/>
+
+        <TextBlock Text="透明度:"/>
+        <Slider x:Name="OpacitySlider" Minimum="0" Maximum="1" Value="0.5" Width="200" Margin="0,0,0,10"/>
+
+        <TextBlock Text="文字色:"/>
+        <ComboBox x:Name="ColorPicker" Width="100" Margin="0,0,0,10">
+            <ComboBoxItem Content="白" Tag="White" IsSelected="True"/>
+            <ComboBoxItem Content="黄" Tag="Yellow"/>
+            <ComboBoxItem Content="赤" Tag="Red"/>
+            <ComboBoxItem Content="緑" Tag="Green"/>
+            <ComboBoxItem Content="青" Tag="Blue"/>
+            <ComboBoxItem Content="黒" Tag="Black"/>
+        </ComboBox>
+
+        <TextBlock Text="---------- F3 ペイント機能 On/Off -------" Margin="10,10,0,5" FontWeight="Bold"/>
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock Text="ショートカット設定:" VerticalAlignment="Center"/>
+            <ComboBox x:Name="ShortcutPaintBox" Width="100" Margin="5,0,0,0"/>
+            <CheckBox x:Name="ChkShiftPaint" Content="Shift併用" Margin="10,0,0,0"/>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+            <TextBlock Text="線の色:" VerticalAlignment="Center"/>
+            <ComboBox x:Name="PenColorBox" Width="80" Margin="5,0,0,0">
+                <ComboBoxItem Content="白" Tag="White"/>
+                <ComboBoxItem Content="赤" Tag="Red" IsSelected="True"/>
+                <ComboBoxItem Content="黄" Tag="Yellow"/>
+                <ComboBoxItem Content="緑" Tag="Green"/>
+                <ComboBoxItem Content="水" Tag="Cyan"/>
+                <ComboBoxItem Content="青" Tag="Blue"/>
+                <ComboBoxItem Content="紫" Tag="Purple"/>
+                <ComboBoxItem Content="黒" Tag="Black"/>
+                <ComboBoxItem Content="灰" Tag="Gray"/>
+            </ComboBox>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock Text="線の太さ(px):" VerticalAlignment="Center"/>
+            <TextBox x:Name="PenThicknessBox" Width="50" Text="3"/>
+        </StackPanel>
+
+        <TextBlock Text="---------- F4 ルーペ機能 On/Off -------" Margin="10,10,0,5" FontWeight="Bold"/>
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock Text="ショートカット設定:" VerticalAlignment="Center"/>
+            <ComboBox x:Name="ShortcutMagnifierBox" Width="100" Margin="5,0,0,0"/>
+            <CheckBox x:Name="ChkShiftMagnifier" Content="Shift併用" Margin="10,0,0,0"/>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+            <TextBlock Text="拡大鏡サイズ 横(px):" VerticalAlignment="Center"/>
+            <TextBox x:Name="MagnifierWidthBox" Width="60" Text="1200"/>
+            <TextBlock Text="縦(px):" VerticalAlignment="Center" Margin="10,0,0,0"/>
+            <TextBox x:Name="MagnifierHeightBox" Width="60" Text="800"/>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock Text="拡大率:" VerticalAlignment="Center"/>
+            <TextBox x:Name="MagnifierZoomBox" Width="60" Text="3.0"/>
+        </StackPanel>
+
+        <Button Content="アプリケーションの終了" Width="180" HorizontalAlignment="Right" Click="Exit_Click"/>
+    </StackPanel>
+</Window>

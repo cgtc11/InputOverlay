@@ -75,6 +75,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Page Include="FullZoomWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="MagnifierWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -85,6 +89,9 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="FullZoomWindow.xaml.cs">
+      <DependentUpon>FullZoomWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="MagnifierWindow.xaml.cs">
       <DependentUpon>MagnifierWindow.xaml</DependentUpon>

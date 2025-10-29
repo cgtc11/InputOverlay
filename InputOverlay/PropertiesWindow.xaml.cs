@@ -4,13 +4,14 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
+using System.Globalization;
+using Keys = System.Windows.Forms.Keys;
 
 namespace InputOverlay
 {
     public partial class PropertiesWindow : Window
     {
         private MainWindow main;
-        private bool _suspend; // 双方向反映のループ防止
 
         private const int GWL_EXSTYLE = -20;
         private const int WS_EX_TOOLWINDOW = 0x00000080;
@@ -42,7 +43,7 @@ namespace InputOverlay
                 SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
             };
 
-            // 初期値反映
+            // 初期値
             ChkMovable.IsChecked = main.AllowMove;
 
             if (main.OverlayBorder.Background is SolidColorBrush brush)
@@ -76,8 +77,8 @@ namespace InputOverlay
 
             MagnifierWidthBox.Text = main.MagnifierWidth.ToString();
             MagnifierHeightBox.Text = main.MagnifierHeight.ToString();
-            MagnifierZoomBox.Text = main.MagnifierZoom.ToString("0.0");
-            PenThicknessBox.Text = main.PenThickness.ToString();
+            MagnifierZoomBox.Text = main.MagnifierZoom.ToString("0.0", CultureInfo.InvariantCulture);
+            PenThicknessBox.Text = main.PenThickness.ToString(CultureInfo.InvariantCulture);
 
             FillKeyCombo(ShortcutOptionsBox, main.ShortcutOptions);
             ChkShiftOptions.IsChecked = main.UseShiftOptions;
@@ -88,33 +89,25 @@ namespace InputOverlay
             FillKeyCombo(ShortcutMagnifierBox, main.ShortcutMagnifier);
             ChkShiftMagnifier.IsChecked = main.UseShiftMagnifier;
 
+            // ポインタ
+            if (FindName("ShortcutPointerBox") is ComboBox sp) FillKeyCombo(sp, main.ShortcutPointer);
+            if (FindName("ChkShiftPointer") is CheckBox spShift) spShift.IsChecked = main.UseShiftPointer;
+            if (FindName("PointerSizeSlider") is Slider ps) ps.Value = main.PointerSize;
+            if (FindName("PointerOpacitySlider") is Slider po) po.Value = main.PointerOpacity;
+            if (FindName("ChkPointerEnabled") is CheckBox cpe) cpe.IsChecked = main.PointerEnabled;
+
+            // 全画面ズーム
+            if (FindName("ShortcutFullZoomBox") is ComboBox fzBox) FillKeyCombo(fzBox, main.ShortcutFullZoom);
+            if (FindName("ChkShiftFullZoom") is CheckBox fzShift) fzShift.IsChecked = main.UseShiftFullZoom;
+            if (FindName("FullZoomScaleBox") is TextBox fzScale) fzScale.Text = main.FullZoomScale.ToString("0.0", CultureInfo.InvariantCulture);
+
             if (FindName("WindowScaleSlider") is Slider windowScale)
             {
                 windowScale.Value = main.UiScale;
                 windowScale.ValueChanged += (s2, e2) => main.SetUiScale(windowScale.Value);
             }
 
-            // ★ F8 ポインタ 初期値
-            if (FindName("ShortcutPointerBox") is ComboBox sp) FillKeyCombo(sp, main.ShortcutPointer);
-            if (FindName("ChkShiftPointer") is CheckBox csp) csp.IsChecked = main.UseShiftPointer;
-            if (FindName("ChkPointerEnabled") is CheckBox cpe)
-            {
-                cpe.IsChecked = main.PointerEnabled;
-                cpe.Checked += Apply_Changed;
-                cpe.Unchecked += Apply_Changed;
-            }
-            if (FindName("PointerSizeSlider") is Slider psz)
-            {
-                psz.Value = main.PointerSize; // 既定50
-                psz.ValueChanged += Apply_Changed;
-            }
-            if (FindName("PointerOpacitySlider") is Slider posz)
-            {
-                posz.Value = main.PointerOpacity; // 既定0.4
-                posz.ValueChanged += Apply_Changed;
-            }
-
-            // イベント
+            // 変更イベント
             ChkMovable.Checked += Apply_Changed;
             ChkMovable.Unchecked += Apply_Changed;
             OpacitySlider.ValueChanged += Apply_Changed;
@@ -139,22 +132,48 @@ namespace InputOverlay
             ChkShiftMagnifier.Checked += Apply_Changed;
             ChkShiftMagnifier.Unchecked += Apply_Changed;
 
+            // ポインタ
+            if (FindName("ShortcutPointerBox") is ComboBox sp2) sp2.SelectionChanged += Apply_Changed;
+            if (FindName("ChkShiftPointer") is CheckBox spShift2)
+            {
+                spShift2.Checked += Apply_Changed;
+                spShift2.Unchecked += Apply_Changed;
+            }
+            if (FindName("PointerSizeSlider") is Slider ps2) ps2.ValueChanged += Apply_Changed;
+            if (FindName("PointerOpacitySlider") is Slider po2) po2.ValueChanged += Apply_Changed;
+            if (FindName("ChkPointerEnabled") is CheckBox cpe2)
+            {
+                cpe2.Checked += Apply_Changed;
+                cpe2.Unchecked += Apply_Changed;
+            }
+
+            // 全画面ズーム
+            if (FindName("ShortcutFullZoomBox") is ComboBox fzBox2) fzBox2.SelectionChanged += Apply_Changed;
+            if (FindName("ChkShiftFullZoom") is CheckBox fzShift2)
+            {
+                fzShift2.Checked += Apply_Changed;
+                fzShift2.Unchecked += Apply_Changed;
+            }
+            if (FindName("FullZoomScaleBox") is TextBox fzScale2) fzScale2.TextChanged += Apply_Changed;
+
+            // テキストボックスのクリックでフォーカス
             MagnifierWidthBox.PreviewMouseDown += TextBox_PreviewMouseDown;
             MagnifierHeightBox.PreviewMouseDown += TextBox_PreviewMouseDown;
             MagnifierZoomBox.PreviewMouseDown += TextBox_PreviewMouseDown;
             PenThicknessBox.PreviewMouseDown += TextBox_PreviewMouseDown;
+            FullZoomScaleBox.PreviewMouseDown += TextBox_PreviewMouseDown;
 
             Apply_Changed(null, EventArgs.Empty);
         }
 
-        private void FillKeyCombo(System.Windows.Controls.ComboBox combo, System.Windows.Forms.Keys selected)
+        private void FillKeyCombo(ComboBox combo, Keys selected)
         {
             combo.Items.Clear();
-            foreach (System.Windows.Forms.Keys k in Enum.GetValues(typeof(System.Windows.Forms.Keys)))
+            foreach (Keys k in Enum.GetValues(typeof(Keys)))
             {
-                if ((k >= System.Windows.Forms.Keys.F1 && k <= System.Windows.Forms.Keys.F12) ||
-                    (k >= System.Windows.Forms.Keys.A && k <= System.Windows.Forms.Keys.Z) ||
-                    (k >= System.Windows.Forms.Keys.D0 && k <= System.Windows.Forms.Keys.D9))
+                if ((k >= Keys.F1 && k <= Keys.F12) ||
+                    (k >= Keys.A && k <= Keys.Z) ||
+                    (k >= Keys.D0 && k <= Keys.D9))
                 {
                     var item = new ComboBoxItem { Content = k.ToString(), Tag = k };
                     combo.Items.Add(item);
@@ -207,24 +226,47 @@ namespace InputOverlay
             }
         }
 
+        // 全角→半角、小数点/カンマ正規化
+        private static string NormalizeNumber(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return "";
+            s = s.Trim();
+            s = s.Replace('，', ',').Replace('．', '.').Replace(",", ""); // 桁区切りは除去
+            // 全角数字
+            var map = "０１２３４５６７８９";
+            for (int i = 0; i < map.Length; i++) s = s.Replace(map[i], (char)('0' + i));
+            // 全角マイナス
+            s = s.Replace('－', '-').Replace('＋', '+');
+            return s;
+        }
+
+        private static bool TryParseDouble(string input, out double value)
+        {
+            input = NormalizeNumber(input);
+            // CurrentCulture → Invariant の順で試す
+            if (double.TryParse(input, NumberStyles.Float, CultureInfo.CurrentCulture, out value)) return true;
+            if (double.TryParse(input, NumberStyles.Float, CultureInfo.InvariantCulture, out value)) return true;
+            return false;
+        }
+
         private void Apply_Changed(object sender, EventArgs e)
         {
-            if (_suspend || main == null) return;
+            if (main == null) return;
 
             main.AllowMove = ChkMovable.IsChecked == true;
 
-            if (int.TryParse(MagnifierWidthBox.Text, out int w) && w > 0) main.MagnifierWidth = w;
-            if (int.TryParse(MagnifierHeightBox.Text, out int h) && h > 0) main.MagnifierHeight = h;
-            if (double.TryParse(MagnifierZoomBox.Text, out double z) && z > 0) main.MagnifierZoom = z;
+            if (int.TryParse(NormalizeNumber(MagnifierWidthBox.Text), out int w) && w > 0) main.MagnifierWidth = w;
+            if (int.TryParse(NormalizeNumber(MagnifierHeightBox.Text), out int h) && h > 0) main.MagnifierHeight = h;
+            if (TryParseDouble(MagnifierZoomBox.Text, out double z) && z > 0) main.MagnifierZoom = z;
 
             if (PenColorBox.SelectedItem is ComboBoxItem pItem)
                 main.PenColor = (Brush)new BrushConverter().ConvertFromString(pItem.Tag.ToString());
-            if (double.TryParse(PenThicknessBox.Text, out double thick) && thick > 0)
+            if (TryParseDouble(PenThicknessBox.Text, out double thick) && thick > 0)
                 main.PenThickness = thick;
 
             double alpha = OpacitySlider.Value;
-            Color bgColor = Colors.Black; bgColor.A = (byte)(Math.Max(0, Math.Min(1, alpha)) * 255);
-            main.OverlayBorder.Background = new SolidColorBrush(bgColor);
+            Color bg = Colors.Black; bg.A = (byte)(Math.Max(0, Math.Min(1, alpha)) * 255);
+            main.OverlayBorder.Background = new SolidColorBrush(bg);
 
             if (FindName("ChkShadowEnabled") is CheckBox chk) main.ShadowEnabled = chk.IsChecked == true;
             if (FindName("ShadowOffsetSlider") is Slider off) main.ShadowOffset = Math.Max(0, off.Value);
@@ -238,54 +280,49 @@ namespace InputOverlay
             }
             double txtAlpha = main.TextOpacity;
             if (FindName("TextOpacitySlider") is Slider txt) txtAlpha = txt.Value;
-
             main.ApplyTextBrush(baseTextColor, txtAlpha);
 
-            if (ShortcutOptionsBox.SelectedItem is ComboBoxItem optItem) main.ShortcutOptions = (System.Windows.Forms.Keys)optItem.Tag;
+            // 既存ショートカット
+            if (ShortcutOptionsBox.SelectedItem is ComboBoxItem optItem) main.ShortcutOptions = (Keys)optItem.Tag;
             main.UseShiftOptions = ChkShiftOptions.IsChecked == true;
 
-            if (ShortcutVisibilityBox.SelectedItem is ComboBoxItem visItem) main.ShortcutVisibility = (System.Windows.Forms.Keys)visItem.Tag;
+            if (ShortcutVisibilityBox.SelectedItem is ComboBoxItem visItem) main.ShortcutVisibility = (Keys)visItem.Tag;
             main.UseShiftVisibility = ChkShiftVisibility.IsChecked == true;
 
-            if (ShortcutPaintBox.SelectedItem is ComboBoxItem paintItem) main.ShortcutPaint = (System.Windows.Forms.Keys)paintItem.Tag;
+            if (ShortcutPaintBox.SelectedItem is ComboBoxItem paintItem) main.ShortcutPaint = (Keys)paintItem.Tag;
             main.UseShiftPaint = ChkShiftPaint.IsChecked == true;
 
-            if (ShortcutMagnifierBox.SelectedItem is ComboBoxItem magItem) main.ShortcutMagnifier = (System.Windows.Forms.Keys)magItem.Tag;
+            if (ShortcutMagnifierBox.SelectedItem is ComboBoxItem magItem) main.ShortcutMagnifier = (Keys)magItem.Tag;
             main.UseShiftMagnifier = ChkShiftMagnifier.IsChecked == true;
 
-            if (FindName("WindowScaleSlider") is Slider windowScale) main.SetUiScale(windowScale.Value);
-
-            // ★ ポインタ反映
-            if (FindName("ShortcutPointerBox") is ComboBox sp && sp.SelectedItem is ComboBoxItem spi)
-                main.ShortcutPointer = (System.Windows.Forms.Keys)spi.Tag;
-            if (FindName("ChkShiftPointer") is CheckBox csp2) main.UseShiftPointer = csp2.IsChecked == true;
-            if (FindName("ChkPointerEnabled") is CheckBox cpe2) main.PointerEnabled = cpe2.IsChecked == true;
-            if (FindName("PointerSizeSlider") is Slider psz2) main.PointerSize = Math.Max(1, psz2.Value);
-            if (FindName("PointerOpacitySlider") is Slider posz2) main.PointerOpacity = Math.Max(0, Math.Min(1, posz2.Value));
-
+            // ポインタ
+            if (FindName("ShortcutPointerBox") is ComboBox sp && sp.SelectedItem is ComboBoxItem spItem)
+                main.ShortcutPointer = (Keys)spItem.Tag;
+            if (FindName("ChkShiftPointer") is CheckBox spShift)
+                main.UseShiftPointer = spShift.IsChecked == true;
+            if (FindName("PointerSizeSlider") is Slider ps2) main.PointerSize = ps2.Value;
+            if (FindName("PointerOpacitySlider") is Slider po2) main.PointerOpacity = po2.Value;
+            if (FindName("ChkPointerEnabled") is CheckBox cpe) main.PointerEnabled = cpe.IsChecked == true;
+            main.ApplyPointerEnabled();
             main.UpdatePointerAppearance();
-            main.ApplyPointerEnabled(); // 表示/非表示を反映
+
+            // 全画面ズーム倍率（ここを堅牢化）
+            if (FindName("FullZoomScaleBox") is TextBox fzScale &&
+                TryParseDouble(fzScale.Text, out double s) && s > 0.1)
+            {
+                main.FullZoomScale = s;
+            }
+
+            if (FindName("WindowScaleSlider") is Slider windowScale) main.SetUiScale(windowScale.Value);
 
             main.UpdateShadowVisuals();
         }
 
-        // === Main → プロパティへの状態反映（F8トグル時に同期） ===
-        public void OnPointerStateChangedFromMain(bool enabled, System.Windows.Forms.Keys key, bool useShift, double size, double opacity)
+        // Main → UI 反映（必要時）
+        public void OnPointerStateChangedFromMain(bool enabled, Keys newKey)
         {
-            _suspend = true;
-            try
-            {
-                if (FindName("ChkPointerEnabled") is CheckBox cpe) cpe.IsChecked = enabled;
-                if (FindName("ShortcutPointerBox") is ComboBox sp)
-                {
-                    foreach (ComboBoxItem it in sp.Items)
-                        if (it.Tag is System.Windows.Forms.Keys k && k == key) { sp.SelectedItem = it; break; }
-                }
-                if (FindName("ChkShiftPointer") is CheckBox csp) csp.IsChecked = useShift;
-                if (FindName("PointerSizeSlider") is Slider psz) psz.Value = size;
-                if (FindName("PointerOpacitySlider") is Slider posz) posz.Value = opacity;
-            }
-            finally { _suspend = false; }
+            if (FindName("ChkPointerEnabled") is CheckBox cpe) cpe.IsChecked = enabled;
+            if (FindName("ShortcutPointerBox") is ComboBox sp) FillKeyCombo(sp, newKey);
         }
 
         private void Exit_Click(object sender, RoutedEventArgs e) => Application.Current.Shutdown();
