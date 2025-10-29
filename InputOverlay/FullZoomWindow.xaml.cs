@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace InputOverlay
 {
@@ -32,10 +33,13 @@ namespace InputOverlay
         [DllImport(MAG_DLL, ExactSpelling = true, SetLastError = true)]
         private static extern bool MagSetWindowTransform(IntPtr hwndMag, ref MAGTRANSFORM pTransform);
 
-        [DllImport("user32.dll")] private static extern bool GetCursorPos(out POINT lpPoint);
+        [DllImport("user32.dll")]
+        private static extern bool GetCursorPos(out POINT lpPoint);
 
-        [StructLayout(LayoutKind.Sequential)] private struct POINT { public int X; public int Y; }
-        [StructLayout(LayoutKind.Sequential)] private struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+        [StructLayout(LayoutKind.Sequential)]
+        private struct POINT { public int X; public int Y; }
+        [StructLayout(LayoutKind.Sequential)]
+        private struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
         [StructLayout(LayoutKind.Sequential)]
         private struct MAGTRANSFORM
         {
@@ -66,6 +70,9 @@ namespace InputOverlay
 
         private TimeSpan _lastTs = TimeSpan.Zero;
 
+        // 初回適用済みか
+        private bool _initialApplied = false;
+
         public FullZoomWindow()
         {
             InitializeComponent();
@@ -73,26 +80,77 @@ namespace InputOverlay
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            var screen = System.Windows.Forms.Screen.PrimaryScreen.Bounds;
-            Left = screen.Left; Top = screen.Top; Width = screen.Width; Height = screen.Height;
+            // ① 今のマウス位置を先にとる（ここを最初に見たい）
+            GetCursorPos(out POINT curPos);
+            double startX = curPos.X;
+            double startY = curPos.Y;
 
+            // ② マウスがあるモニタを優先してズーム
+            System.Windows.Forms.Screen targetScreen = System.Windows.Forms.Screen.FromPoint(
+                new System.Drawing.Point(curPos.X, curPos.Y)
+            );
+            if (targetScreen == null)
+                targetScreen = System.Windows.Forms.Screen.PrimaryScreen;
+
+            var b = targetScreen.Bounds;
+
+            // ③ このズームウインドウをそのモニタいっぱいに
+            Left = b.Left;
+            Top = b.Top;
+            Width = b.Width;
+            Height = b.Height;
+
+            // ④ WPFハンドルなど
             var hwnd = new WindowInteropHelper(this).Handle;
             _src = HwndSource.FromHwnd(hwnd);
             _src.CompositionTarget.BackgroundColor = System.Windows.Media.Colors.Transparent;
 
-            // ここで MainWindow の設定を読む
+            // ⑤ メインウインドウ側の倍率を拾う
             if (Application.Current?.MainWindow is MainWindow mw && mw.FullZoomScale > 0.1)
                 _scale = mw.FullZoomScale;
 
+            // ⑥ 初期中心はマウス位置
+            _cx = startX;
+            _cy = startY;
+            _vx = 0;
+            _vy = 0;
+
+            // ⑦ Magnifier生成
             MagInitialize();
             _hwndMag = CreateWindowEx(
-                0, WC_MAGNIFIER, "mag",
+                0,
+                WC_MAGNIFIER,
+                "mag",
                 WS_CHILD | WS_VISIBLE,
-                0, 0, (int)Width, (int)Height,
-                hwnd, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                0,
+                0,
+                (int)Width,
+                (int)Height,
+                hwnd,
+                IntPtr.Zero,
+                IntPtr.Zero,
+                IntPtr.Zero);
 
-            UpdateView(); // 初期設定
-            CompositionTarget.Rendering += OnRendering; // VSync駆動
+            // ⑧ まず倍率だけ反映
+            _viewW = (int)(Width / _scale);
+            _viewH = (int)(Height / _scale);
+            var mat = ScaleMatrix(_scale);
+            MagSetWindowTransform(_hwndMag, ref mat);
+
+            // ⑨ ここで一発、マウス位置をソースにする（すぐあとでDispatcherでもう一回やる）
+            var firstRect = RectFromCenter((int)Math.Round(_cx), (int)Math.Round(_cy), _viewW, _viewH);
+            ClampSourceToVirtual(ref firstRect);
+            _srcRect = firstRect;
+            MagSetWindowSource(_hwndMag, _srcRect);
+
+            // ⑩ 1フレーム遅らせてもう一度（「必ず左上になる」対策）
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+            {
+                ForceApplyCurrentCenter();
+            }));
+
+            // ⑪ VSync駆動
+            CompositionTarget.Rendering += OnRendering;
         }
 
         private void Window_Closed(object sender, EventArgs e)
@@ -122,17 +180,24 @@ namespace InputOverlay
             return new RECT { Left = l, Top = t, Right = l + w, Bottom = t + h };
         }
 
-        private void ClampSourceToScreen(ref RECT r)
+        // マルチモニタで原点がマイナスでも動くように「仮想スクリーン」全体にクランプ
+        private void ClampSourceToVirtual(ref RECT r)
         {
-            var scr = System.Windows.Forms.Screen.PrimaryScreen.Bounds;
-            if (r.Left < scr.Left) { r.Right += scr.Left - r.Left; r.Left = scr.Left; }
-            if (r.Top < scr.Top) { r.Bottom += scr.Top - r.Top; r.Top = scr.Top; }
-            if (r.Right > scr.Right) { r.Left -= (r.Right - scr.Right); r.Right = scr.Right; }
-            if (r.Bottom > scr.Bottom) { r.Top -= (r.Bottom - scr.Bottom); r.Bottom = scr.Bottom; }
+            int vLeft = (int)SystemParameters.VirtualScreenLeft;
+            int vTop = (int)SystemParameters.VirtualScreenTop;
+            int vWidth = (int)SystemParameters.VirtualScreenWidth;
+            int vHeight = (int)SystemParameters.VirtualScreenHeight;
+
+            int vRight = vLeft + vWidth;
+            int vBottom = vTop + vHeight;
+
+            if (r.Left < vLeft) { r.Right += (vLeft - r.Left); r.Left = vLeft; }
+            if (r.Top < vTop) { r.Bottom += (vTop - r.Top); r.Top = vTop; }
+            if (r.Right > vRight) { r.Left -= (r.Right - vRight); r.Right = vRight; }
+            if (r.Bottom > vBottom) { r.Top -= (r.Bottom - vBottom); r.Bottom = vBottom; }
         }
 
-        // 表示サイズと拡大率反映
-        private void UpdateView()
+        private void ForceApplyCurrentCenter()
         {
             _viewW = (int)(Width / _scale);
             _viewH = (int)(Height / _scale);
@@ -140,34 +205,24 @@ namespace InputOverlay
             var mat = ScaleMatrix(_scale);
             MagSetWindowTransform(_hwndMag, ref mat);
 
-            if (double.IsNaN(_cx) || double.IsNaN(_cy))
-            {
-                GetCursorPos(out POINT p0);
-                _cx = p0.X; _cy = p0.Y;
-            }
-            ApplyCenter(force: true);
-        }
-
-        // 中心適用
-        private void ApplyCenter(bool force = false)
-        {
-            var rect = RectFromCenter((int)System.Math.Round(_cx), (int)System.Math.Round(_cy), _viewW, _viewH);
-            ClampSourceToScreen(ref rect);
-
-            if (!force)
-            {
-                double dx = rect.Left - _srcRect.Left;
-                double dy = rect.Top - _srcRect.Top;
-                if (dx * dx + dy * dy < APPLY_EPS * APPLY_EPS) return;
-            }
-
+            var rect = RectFromCenter((int)Math.Round(_cx), (int)Math.Round(_cy), _viewW, _viewH);
+            ClampSourceToVirtual(ref rect);
             _srcRect = rect;
             MagSetWindowSource(_hwndMag, _srcRect);
+
+            _initialApplied = true;
         }
 
         // VSyncごとに追従更新
         private void OnRendering(object sender, EventArgs e)
         {
+            // 初回だけ強制でかぶせる（Dispatcherが間に合わないPC向け）
+            if (!_initialApplied)
+            {
+                ForceApplyCurrentCenter();
+                return;
+            }
+
             if (_dragging) return;
 
             var args = (RenderingEventArgs)e;
@@ -187,26 +242,39 @@ namespace InputOverlay
             _vx += ax * dt;
             _vy += ay * dt;
 
-            double v = System.Math.Sqrt(_vx * _vx + _vy * _vy);
+            double v = Math.Sqrt(_vx * _vx + _vy * _vy);
             if (v > MAX_SPEED)
             {
-                double s = MAX_SPEED / System.Math.Max(v, 1e-6);
+                double s = MAX_SPEED / Math.Max(v, 1e-6);
                 _vx *= s; _vy *= s;
             }
 
             _cx += _vx * dt;
             _cy += _vy * dt;
 
-            ApplyCenter();
+            var rect = RectFromCenter((int)Math.Round(_cx), (int)Math.Round(_cy), _viewW, _viewH);
+            ClampSourceToVirtual(ref rect);
+            _srcRect = rect;
+            MagSetWindowSource(_hwndMag, _srcRect);
         }
 
-        // ===== 入力 =====
+        // ===== マウス入力 =====
         private void FullZoomWindow_MouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
         {
-            _scale = e.Delta > 0 ? System.Math.Min(8.0, _scale * 1.1) : System.Math.Max(1.0, _scale / 1.1);
+            _scale = e.Delta > 0 ? Math.Min(8.0, _scale * 1.1) : Math.Max(1.0, _scale / 1.1);
             GetCursorPos(out POINT p);
             _cx = p.X; _cy = p.Y; _vx = 0; _vy = 0;
-            UpdateView();
+
+            _viewW = (int)(Width / _scale);
+            _viewH = (int)(Height / _scale);
+
+            var mat = ScaleMatrix(_scale);
+            MagSetWindowTransform(_hwndMag, ref mat);
+
+            var rect = RectFromCenter((int)Math.Round(_cx), (int)Math.Round(_cy), _viewW, _viewH);
+            ClampSourceToVirtual(ref rect);
+            _srcRect = rect;
+            MagSetWindowSource(_hwndMag, _srcRect);
         }
 
         private void FullZoomWindow_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -229,7 +297,7 @@ namespace InputOverlay
 
             _srcRect.Left -= dx; _srcRect.Right -= dx;
             _srcRect.Top -= dy; _srcRect.Bottom -= dy;
-            ClampSourceToScreen(ref _srcRect);
+            ClampSourceToVirtual(ref _srcRect);
             MagSetWindowSource(_hwndMag, _srcRect);
 
             _cx = (_srcRect.Left + _srcRect.Right) / 2.0;
