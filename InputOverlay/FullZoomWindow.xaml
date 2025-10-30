@@ -8,16 +8,17 @@
         AllowsTransparency="True"
         Topmost="True"
         ShowInTaskbar="False"
-        Cursor="None"
         Loaded="Window_Loaded"
         Closed="Window_Closed"
+        PreviewKeyDown="Window_PreviewKeyDown"
         PreviewMouseWheel="FullZoomWindow_MouseWheel"
         MouseDown="FullZoomWindow_MouseDown"
         MouseMove="FullZoomWindow_MouseMove"
-        MouseUp="FullZoomWindow_MouseUp">
-    <Grid x:Name="Root" Background="Transparent">
-        <Canvas x:Name="Overlay" IsHitTestVisible="False">
-            <Image x:Name="CursorOverlay" Visibility="Collapsed"/>
-        </Canvas>
+        MouseUp="FullZoomWindow_MouseUp"
+        PreviewMouseRightButtonDown="Window_PreviewMouseRightButtonDown">
+    <Grid x:Name="Root"
+          Background="#01000000"
+          IsHitTestVisible="True">
+        <!-- Win32 magnifier child will be created in code-behind -->
     </Grid>
 </Window>
